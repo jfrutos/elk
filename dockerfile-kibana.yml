@@ -1,0 +1,5 @@
+FROM docker.elastic.co/kibana/kibana:6.0.0
+MAINTAINER JAFB <jfrutos@gmail.com>
+
+RUN kibana-plugin remove x-pack
+RUN sed -i '/xpack/d' /usr/share/kibana/config/kibana.yml
