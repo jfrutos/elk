@@ -10,6 +10,8 @@ services:
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "http.host=0.0.0.0"
+      - "transport.host=127.0.0.1"
     ulimits:
       memlock:
         soft: -1
@@ -17,14 +19,14 @@ services:
     volumes:
       - esdata1:/usr/share/elasticsearch/data
     ports:
-      - 9200:9200
+      - 0.0.0.0:9200:9200
     networks:
       - esnet
   elasticsearch2:
     build:
       context: ./
       dockerfile: dockerfile-elasticsearch.yml
-    #image: docker.elastic.co/elasticsearch/elasticsearch:6.0.0
+   #image: docker.elastic.co/elasticsearch/elasticsearch:6.0.0
     container_name: elasticsearch2
     environment:
       - cluster.name=docker-cluster
@@ -39,27 +41,61 @@ services:
       - esdata2:/usr/share/elasticsearch/data
     networks:
       - esnet
-  logstash:
+  logstash-process:
     build:
       context: ./
-      dockerfile: dockerfile-logstash.yml
+      dockerfile: dockerfile-logstash-process.yml
       # Provide a simple pipeline configuration for Logstash with a bind-mounted file.
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - "w 1"
+      - LOG_LEVEL=warn
     networks: ['esnet']
-    depends_on: ['elasticsearch']
+    depends_on: ['rabbitmq','elasticsearch']
+  
+  logstash-ingest:
+    build:
+      context: ./
+      dockerfile: dockerfile-logstash-ingest.yml
+      # Provide a simpe pipeline configuration for Logstash with a bind-mounted file.
+    environment:
+      - LOG_LEVEL=warn
+    ports:
+      - 0.0.0.0:5043:5043
+    networks: ['esnet']
+    depends_on: ['rabbitmq']
+
   kibana:
     build:
       context: ./
       dockerfile: dockerfile-kibana.yml
       # Provide a simple pipeline configuration for Logstash with a bind-mounted file.
     ports:
-      - 5601:5601
+      - 0.0.0.0:5601:5601
     networks: ['esnet']
     depends_on: ['elasticsearch']
 
+  rabbitmq:
+    build:
+      context: ./
+      dockerfile: dockerfile-rabbitmq.yml
+      # Provide a simple pipeline configuration for Logstash with a bind-mounted file.
+    environment:
+      - RABBITMQ_DEFAULT_VHOST=logstash
+      - RABBITMQ_DEFAULT_USER=logstash
+      - RABBITMQ_DEFAULT_PASS=super_secret
+    ports:
+      - 0.0.0.0:15672:15672
+    volumes:
+      - rmqdata:/var/lib/rabbitmq
+    networks: ['esnet']
+    
 volumes:
   esdata1:
     driver: local
   esdata2:
+    driver: local
+  rmqdata:
     driver: local
 
 networks:

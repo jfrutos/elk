@@ -1,4 +1,4 @@
 FROM docker.elastic.co/elasticsearch/elasticsearch:6.0.0
-COPY --chown=elasticsearch:elasticsearch ./config/elasticsearch/* /usr/share/elasticsearch/config/
+COPY  ./config/elasticsearch/* /usr/share/elasticsearch/config/
 RUN rm -rf /usr/share/elasticsearch/config/x-pack
 RUN elasticsearch-plugin remove x-pack

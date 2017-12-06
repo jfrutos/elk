@@ -1,0 +1,9 @@
+FROM docker.elastic.co/logstash/logstash:6.0.0
+MAINTAINER JAFB <jfrutos@gmail.com>
+
+
+RUN logstash-plugin remove x-pack
+#RUN logstash-plugin install logstash-codec-multiline
+RUN sed -i '/xpack/d' /usr/share/logstash/config/logstash.yml
+
+COPY config/logstash/process/pipeline/* /usr/share/logstash/pipeline/
